@@ -59,6 +59,9 @@ def process_image(frame, block_model, plate_model):
             
     return current_blocks, current_plates
 
+import cv2
+import math
+
 def draw_detections(frame, blocks, plates):
     if not plates:
         return frame
@@ -73,31 +76,61 @@ def draw_detections(frame, blocks, plates):
         object_center_x = block['position']['x']
         object_center_y = block['position']['y']
         
-        # 計算距離
+        # Calculate the distance in the image
         image_distance = math.sqrt(
             (circle_center_x - object_center_x) ** 2 +
             (circle_center_y - object_center_y) ** 2
         )
         
+        # Calculate the scale ratio
         scale_ratio = circle_real_diameter / circle_image_diameter
+        
+        # Calculate the real-world distance (cm)
         real_distance = image_distance * scale_ratio
         
-        # 繪製圓形和線條
-        cv2.circle(frame, (int(circle_center_x), int(circle_center_y)), 
-                  5, (0, 0, 255), -1)
-        cv2.circle(frame, (int(object_center_x), int(object_center_y)), 
-                  5, (0, 0, 255), -1)
-        cv2.line(frame, (int(circle_center_x), int(circle_center_y)),
-                (int(object_center_x), int(object_center_y)), (0, 0, 255), 2)
+        # Calculate x-axis and y-axis distances (cm)
+        x_axis_image_distance = abs(circle_center_x - object_center_x)
+        y_axis_image_distance = abs(circle_center_y - object_center_y)
+        x_axis_real_distance = x_axis_image_distance * scale_ratio
+        y_axis_real_distance = y_axis_image_distance * scale_ratio
         
-        # 添加距離文字
-        mid_x = (circle_center_x + object_center_x) / 2
-        mid_y = (circle_center_y + object_center_y) / 2
-        cv2.putText(frame, f"{real_distance:.2f} cm", 
-                   (int(mid_x), int(mid_y)),
-                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        # Draw circles and connecting line
+        cv2.circle(frame, (int(circle_center_x), int(circle_center_y)), 
+                   5, (0, 0, 255), -1)
+        cv2.circle(frame, (int(object_center_x), int(object_center_y)), 
+                   5, (0, 0, 255), -1)
+        cv2.line(frame, (int(circle_center_x), int(circle_center_y)),
+                 (int(object_center_x), int(object_center_y)), (0, 0, 255), 2)
+
+        # Draw arrow pointing to the x-axis direction
+        x_arrow_end = (int(object_center_x), int(circle_center_y))
+        cv2.arrowedLine(frame, 
+                        (int(circle_center_x), int(circle_center_y)), 
+                        x_arrow_end, (0, 255, 0), 2, tipLength=0.2)
+        
+        # Draw arrow pointing to the y-axis direction
+        y_arrow_end = (int(circle_center_x), int(object_center_y))
+        cv2.arrowedLine(frame, 
+                        (int(circle_center_x), int(circle_center_y)), 
+                        y_arrow_end, (255, 255, 0), 2, tipLength=0.2)
+        
+        # Set text position (middle-right offset slightly up)
+        text_start_x = frame.shape[1] - 250  # 靠右側，距離右邊框 200 px
+        text_start_y = frame.shape[0] // 2 - 50  # 從畫面中間往上 50 px
+        
+        # Display text on the right middle part of the image
+        cv2.putText(frame, f"Distance: {real_distance:.2f} cm", 
+                    (text_start_x, text_start_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        cv2.putText(frame, f"dx: {x_axis_real_distance:.2f} cm", 
+                    (text_start_x, text_start_y + 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(frame, f"dy: {y_axis_real_distance:.2f} cm", 
+                    (text_start_x, text_start_y + 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
     
     return frame
+
 
 def detect(opt):
     # Load pretrained YOLO models
