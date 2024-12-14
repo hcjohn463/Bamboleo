@@ -59,9 +59,6 @@ def process_image(frame, block_model, plate_model):
             
     return current_blocks, current_plates
 
-import cv2
-import math
-
 def draw_detections(frame, blocks, plates):
     if not plates:
         return frame
@@ -119,14 +116,17 @@ def draw_detections(frame, blocks, plates):
         text_start_y = frame.shape[0] // 2 - 50  # 從畫面中間往上 50 px
         
         # Display text on the right middle part of the image
-        cv2.putText(frame, f"Distance: {real_distance:.2f} cm", 
+        cv2.putText(frame, f"Type: {block['type']} ", 
                     (text_start_x, text_start_y),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-        cv2.putText(frame, f"dx: {x_axis_real_distance:.2f} cm", 
+        cv2.putText(frame, f"Distance: {real_distance:.2f} cm", 
                     (text_start_x, text_start_y + 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, f"dx: {x_axis_real_distance:.2f} cm", 
+                    (text_start_x, text_start_y + 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.putText(frame, f"dy: {y_axis_real_distance:.2f} cm", 
-                    (text_start_x, text_start_y + 60),
+                    (text_start_x, text_start_y + 90),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
     
     return frame
